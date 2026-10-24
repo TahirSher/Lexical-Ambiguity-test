@@ -1,6 +1,6 @@
 # Research rationale: answers to the six assessment questions
 
-This document accompanies the code in this repository (`run_pipeline.py`, `src/lexamb/`). References
+This document accompanies the single script `lexical_ambiguity_pipeline.py` in this repository. References
 are restricted to peer-reviewed venues where possible; arXiv-only items are marked **[preprint]**.
 Verify every citation against the published version before submission.
 
@@ -54,7 +54,7 @@ not "the first layer-wise ambiguity study".
 ## 3. Hypotheses and research questions
 
 Research questions RQ1–RQ6 follow the specification. The testable hypotheses are below, with their
-direction fixed in `configs/experiment.yaml` before running.
+direction fixed in the script's embedded configuration (`DEFAULT_CONFIG_YAML`) before running.
 
 - **H1 (RQ1).** Frequency is decodable from the earliest layers, including the embeddings. The
   conditional increment beyond sense count and form controls is > 0 (max-T-corrected permutation
@@ -85,11 +85,11 @@ direction fixed in `configs/experiment.yaml` before running.
 
 ## 4. How the hypotheses are tested (scientific controls)
 
-| Requirement | Implementation (file) |
+| Requirement | Implementation (function in the script) |
 |---|---|
-| No label leakage | Prompts are exactly `Word: {w}` or the native chat template with that content. Labels are joined only after extraction, and a unit test asserts the exact prompt text (`prompt_formatting.py`, `tests/`). |
-| Correct representation site | Character-offset alignment to the target subtokens, with decoded-string verification. Last subtoken is primary, mean is sensitivity. The L+1 hidden-state convention and the final-norm status are checked at runtime (`extract_hidden_states.py`). |
-| Valid estimator in d ≫ n | Ridge in dual form. α is chosen by *exact* leave-one-out error (Golub, Heath & Wahba, 1979), verified against the primal solution to 1e-14 (`stats_utils.py`, test). |
+| No label leakage | Prompts are exactly `Word: {w}` or the native chat template with that content. Labels are joined only after extraction, and a unit test asserts the exact prompt text (`render()`; checked by `--self-test`). |
+| Correct representation site | Character-offset alignment to the target subtokens, with decoded-string verification. Last subtoken is primary, mean is sensitivity. The L+1 hidden-state convention and the final-norm status are checked at runtime (`extract_model()`). |
+| Valid estimator in d ≫ n | Ridge in dual form. α is chosen by *exact* leave-one-out error (Golub, Heath & Wahba, 1979), verified against the primal solution to 1e-14 (`fwl_kernel_ridge()`; checked by `--self-test`). |
 | Unique information (G1) | Covariates are *unpenalised* and partialled out inside each training fold by the Frisch–Waugh–Lovell theorem. ΔR² over the covariate-only baseline is a conditional probe (Hewitt et al., EMNLP 2021). A unit test shows that a layer encoding *only* frequency yields ΔR² ≈ 0 for sense count. |
 | No item leakage | Repeated StratifiedGroupKFold by word, deduplicated within each analysis set. All scaling, residualisation, α selection and Platt calibration happen inside training folds. Folds are identical across models, which enables paired tests. |
 | Null and multiplicity | Freedman–Lane permutation (Freedman & Lane, 1983), with α re-selected inside every permutation. The same permutations are used at every layer, giving per-layer p, BH-FDR across layers (Benjamini & Hochberg, 1995) and Westfall–Young max-T across layers. |
